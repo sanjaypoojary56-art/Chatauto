@@ -7,8 +7,14 @@ app.use(express.json());
 const API_KEY = process.env.API_KEY;
 
 // Test route (very important)
-app.get("/", (req, res) => {
-    res.send("Server is running");
+app.post("/chat", (req, res) => {
+    const userMessage = req.body.message;
+
+    console.log("Received:", userMessage);
+
+    res.json({
+        reply: "Hello from backend: " + userMessage
+    });
 });
 
 // Chat endpoint
