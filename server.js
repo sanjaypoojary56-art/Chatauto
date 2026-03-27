@@ -3,10 +3,10 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
-// 🔴 Put your NEW private Gemini API key here
+// API key from Render environment
 const API_KEY = process.env.API_KEY;
 
-// Health check (important for Render)
+// Test route (very important)
 app.get("/", (req, res) => {
     res.send("Server is running");
 });
@@ -18,7 +18,7 @@ app.post("/chat", async (req, res) => {
 
     try {
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`,
+            "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=" + API_KEY,
             {
                 method: "POST",
                 headers: {
@@ -37,7 +37,13 @@ app.post("/chat", async (req, res) => {
         const data = await response.json();
 
         const reply =
-            data.candidates?.[0]?.content?.parts?.[0]?.text || "No reply";
+            data.candidates &&
+            data.candidates[0] &&
+            data.candidates[0].content &&
+            data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0].text
+            ? data.candidates[0].content.parts[0].text
+            : "No reply";
 
         res.json({ reply });
 
@@ -47,9 +53,9 @@ app.post("/chat", async (req, res) => {
     }
 });
 
-// Render requires PORT
+// Render dynamic port
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log("Server running on port " + PORT);
 });
