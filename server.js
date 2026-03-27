@@ -1,46 +1,69 @@
 const express = require("express");
+const axios = require("axios");
+
 const app = express();
 
-// Middleware to read JSON from Android app
 app.use(express.json());
 
-// ----------------------
-// Root route (browser test)
-// ----------------------
+// Test route
 app.get("/", (req, res) => {
     res.send("Server is running");
 });
 
 // ----------------------
-// Chat API route (Android will call this)
+// CHAT ROUTE
 // ----------------------
-app.post("/chat", (req, res) => {
+app.post("/chat", async (req, res) => {
 
-    // Get message sent from Android
-    const userMessage = req.body.message;
+    try {
+        const userMessage = req.body.message;
 
-    console.log("Message received from app:", userMessage);
+        if (!userMessage) {
+            return res.json({ reply: "No message received" });
+        }
 
-    // Basic reply logic (you can replace with AI later)
-    let replyMessage = "";
+        // 🔑 Your environment API key
+        const API_KEY = process.env.API_KEY;
 
-    if (!userMessage) {
-        replyMessage = "No message received";
-    } else {
-        replyMessage = "Bot reply: " + userMessage;
+        if (!API_KEY) {
+            return res.json({ reply: "API key not found in environment" });
+        }
+
+        // 🔥 Gemini API call
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`,
+            {
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: userMessage
+                            }
+                        ]
+                    }
+                ]
+            }
+        );
+
+        const replyMessage =
+            response.data.candidates[0].content.parts[0].text;
+
+        res.json({
+            reply: replyMessage
+        });
+
+    } catch (error) {
+        console.log("Error:", error.message);
+
+        res.json({
+            reply: "AI request failed"
+        });
     }
-
-    // Send response back to Android
-    res.json({
-        reply: replyMessage
-    });
 });
 
-// ----------------------
-// Server start (IMPORTANT for Render)
 // ----------------------
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log("Server is running on port " + PORT);
+    console.log("Server running on port " + PORT);
 });
