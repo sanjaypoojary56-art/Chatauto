@@ -5,7 +5,9 @@ const app = express();
 
 app.use(express.json());
 
-// Test route
+// ----------------------
+// TEST ROUTE
+// ----------------------
 app.get("/", (req, res) => {
     res.send("Server is running");
 });
@@ -14,7 +16,6 @@ app.get("/", (req, res) => {
 // CHAT ROUTE
 // ----------------------
 app.post("/chat", async (req, res) => {
-
     try {
         const userMessage = req.body.message;
 
@@ -22,19 +23,21 @@ app.post("/chat", async (req, res) => {
             return res.json({ reply: "No message received" });
         }
 
-        // 🔑 Your environment API key
         const API_KEY = process.env.API_KEY;
 
         if (!API_KEY) {
-            return res.json({ reply: "API key not found in environment" });
+            return res.json({ reply: "API key missing in Render environment" });
         }
 
-        // 🔥 Gemini API call
+        // ----------------------
+        // GEMINI 2.5 FLASH CALL (FIXED)
+        // ----------------------
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
             {
                 contents: [
                     {
+                        role: "user",
                         parts: [
                             {
                                 text: userMessage
@@ -46,21 +49,24 @@ app.post("/chat", async (req, res) => {
         );
 
         const replyMessage =
-            response.data.candidates[0].content.parts[0].text;
+            response.data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        res.json({
-            reply: replyMessage
+        return res.json({
+            reply: replyMessage || "No response from AI"
         });
 
     } catch (error) {
-        console.log("Error:", error.message);
+        console.log("FULL ERROR:");
+        console.log(error.response?.data || error.message);
 
-        res.json({
-            reply: "AI request failed"
+        return res.status(500).json({
+            reply: error.response?.data || error.message
         });
     }
 });
 
+// ----------------------
+// START SERVER
 // ----------------------
 const PORT = process.env.PORT || 3000;
 
