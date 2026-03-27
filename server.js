@@ -1,66 +1,46 @@
 const express = require("express");
-
 const app = express();
+
+// Middleware to read JSON from Android app
 app.use(express.json());
 
-// API key from Render environment
-const API_KEY = process.env.API_KEY;
+// ----------------------
+// Root route (browser test)
+// ----------------------
+app.get("/", (req, res) => {
+    res.send("Server is running");
+});
 
-// Test route (very important)
+// ----------------------
+// Chat API route (Android will call this)
+// ----------------------
 app.post("/chat", (req, res) => {
+
+    // Get message sent from Android
     const userMessage = req.body.message;
 
-    console.log("Received:", userMessage);
+    console.log("Message received from app:", userMessage);
 
+    // Basic reply logic (you can replace with AI later)
+    let replyMessage = "";
+
+    if (!userMessage) {
+        replyMessage = "No message received";
+    } else {
+        replyMessage = "Bot reply: " + userMessage;
+    }
+
+    // Send response back to Android
     res.json({
-        reply: "Hello from backend: " + userMessage
+        reply: replyMessage
     });
 });
 
-// Chat endpoint
-app.post("/chat", async (req, res) => {
-
-    const userMessage = req.body.message;
-
-    try {
-        const response = await fetch(
-            "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=" + API_KEY,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [{ text: userMessage }]
-                        }
-                    ]
-                })
-            }
-        );
-
-        const data = await response.json();
-
-        const reply =
-            data.candidates &&
-            data.candidates[0] &&
-            data.candidates[0].content &&
-            data.candidates[0].content.parts &&
-            data.candidates[0].content.parts[0].text
-            ? data.candidates[0].content.parts[0].text
-            : "No reply";
-
-        res.json({ reply });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ reply: "Server error" });
-    }
-});
-
-// Render dynamic port
+// ----------------------
+// Server start (IMPORTANT for Render)
+// ----------------------
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-
+    console.log("Server is running on port " + PORT);
+});
